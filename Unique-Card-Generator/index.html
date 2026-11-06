@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraQuote - Personalized Quote Card Generator</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&family=Montserrat:wght@400;600;800&family=Outfit:wght@300;400;600;800&family=Playfair+Display:ital,wght@0,400;0,600;0,800;1,400&family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- html2canvas CDN for crisp image export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f3ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#1e1b4b',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        playfair: ['Playfair Display', 'serif'],
+                        space: ['Space Grotesk', 'sans-serif'],
+                        montserrat: ['Montserrat', 'sans-serif'],
+                        cinzel: ['Cinzel', 'serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'gradient-x': 'gradient-x 15s ease infinite',
+                    },
+                    keyframes: {
+                        'gradient-x': {
+                            '0%, 100%': { 'background-size': '200% 200%', 'background-position': 'left center' },
+                            '50%': { 'background-size': '200% 200%', 'background-position': 'right center' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.4);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.8);
+        }
+
+        /* Glassmorphism Styles */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        /* Custom Noise Texture Background */
+        .bg-noise {
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+        }
+
+        /* Card Noise Overlay */
+        .card-noise-overlay {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.08'/%3E%3C/svg%3E");
+            border-radius: inherit;
+        }
+
+        /* Gradient Animation */
+        .animated-mesh {
+            background: linear-gradient(-45deg, #0f172a, #1e1b4b, #311042, #0f172a);
+            background-size: 400% 400%;
+            animation: gradient-x 12s ease infinite;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white antialiased overflow-x-hidden">
+
+    <!-- Top Dynamic Navigation / Header -->
+    <header class="w-full border-b border-slate-800/80 glass-panel sticky top-0 z-40 px-4 lg:px-8 py-3.5 transition-all">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            
+            <!-- Brand Logo & Greeting -->
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start">
+                <div class="flex items-center gap-2.5">
+                    <div class="h-10 w-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 p-0.5 shadow-lg shadow-indigo-500/20">
+                        <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+                            <i data-lucide="sparkles" class="w-5 h-5 text-indigo-400"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <h1 class="font-bold text-lg leading-tight tracking-tight bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">AuraQuote</h1>
+                        <p class="text-xs text-slate-400 font-medium">Card Design Studio</p>
+                    </div>
+                </div>
+
+                <!-- Dynamic Time Indicator (Mobile Right) -->
+                <div class="sm:hidden flex items-center gap-2 px-3 py-1 rounded-full bg-slate-900/80 border border-slate-800 text-xs">
+                    <span id="timeIconMobile"></span>
+                    <span id="timeTextMobile" class="font-mono text-indigo-300"></span>
+                </div>
+            </div>
+
+            <!-- Header Center: Greeting Message -->
+            <div class="text-center hidden md:block">
+                <div class="flex items-center justify-center gap-2 text-sm font-medium text-slate-200">
+                    <span id="greetingHeaderIcon" class="text-amber-400"></span>
+                    <span id="greetingHeaderText">Good day!</span>
+                </div>
+                <p id="greetingHeaderSubtitle" class="text-xs text-slate-400 mt-0.5 max-w-md line-clamp-1"></p>
+            </div>
+
+            <!-- Dynamic Time & Status Badge (Desktop) -->
+            <div class="hidden sm:flex items-center gap-3">
+                <div class="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-900/90 border border-slate-800/80 text-xs shadow-inner">
+                    <span class="relative flex h-2 w-2">
+                      <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                      <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    <span id="timeIconDesktop"></span>
+                    <span id="timeTextDesktop" class="font-mono text-slate-300 font-medium"></span>
+                </div>
+                
+                <button onclick="openFavoritesModal()" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-indigo-900/30 hover:bg-indigo-900/50 border border-indigo-500/30 text-indigo-300 transition-all">
+                    <i data-lucide="bookmark" class="w-3.5 h-3.5"></i>
+                    <span>Saved</span>
+                    <span id="favoritesCountBadge" class="ml-1 bg-indigo-600 text-white rounded-full text-[10px] px-1.5 py-0.2 font-mono">0</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Workspace Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-8 flex flex-col lg:flex-row gap-6 lg:gap-8">
+        
+        <!-- ================= LEFT PANEL: Questionnaire & Control Center ================= -->
+        <aside class="w-full lg:w-[450px] flex-shrink-0 flex flex-col gap-5">
+            
+            <!-- Navigation Tabs for Sidebar -->
+            <div class="flex bg-slate-900/80 p-1.5 rounded-xl border border-slate-800/80 shadow-md">
+                <button id="tabBtn1" onclick="switchTab(1)" class="flex-1 py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all bg-indigo-600 text-white shadow">
+                    <i data-lucide="wand2" class="w-4 h-4"></i>
+                    <span>1. Personalized Quote</span>
+                </button>
+                <button id="tabBtn2" onclick="switchTab(2)" class="flex-1 py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all text-slate-400 hover:text-slate-200">
+                    <i data-lucide="palette" class="w-4 h-4"></i>
+                    <span>2. Theme & Styling</span>
+                </button>
+            </div>
+
+            <!-- STEP 1: Personal Inputs & Quote Generator -->
+            <div id="step1Panel" class="glass-panel p-5 md:p-6 rounded-2xl flex flex-col gap-5 border border-slate-800/80 shadow-xl">
+                <div>
+                    <h2 class="text-base font-bold text-white flex items-center gap-2">
+                        <i data-lucide="user-check" class="w-4 h-4 text-indigo-400"></i> Personalize Your Vibes
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">Provide your context to curate or auto-generate tailored quotes.</p>
+                </div>
+
+                <div class="space-y-4">
+                    <!-- Input: Name -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Your Name / Alias</label>
+                        <input type="text" id="inputName" placeholder="e.g. Alex Morgan" value="Alex Morgan" 
+                            class="w-full bg-slate-900/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+                    </div>
+
+                    <!-- Input: Current Vibe/Mood -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Current Vibe / State of Mind</label>
+                        <select id="inputMood" class="w-full bg-slate-900/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+                            <option value="ambitious">🚀 Ambitious & Driven</option>
+                            <option value="calm">🧘 Peaceful & Mindful</option>
+                            <option value="creative">🎨 Creative & Bold</option>
+                            <option value="resilient">🛡️ Resilient & Strong</option>
+                            <option value="reflective">🌌 Deep & Reflective</option>
+                            <option value="energetic">⚡ Energetic & Unstoppable</option>
+                        </select>
+                    </div>
+
+                    <!-- Input: Primary Life Focus -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Primary Life Goal / Focus</label>
+                        <select id="inputGoal" class="w-full bg-slate-900/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+                            <option value="mastery">Mastering a Craft & Career</option>
+                            <option value="inner_peace">Finding Inner Peace & Balance</option>
+                            <option value="building">Building Projects & Leaving a Legacy</option>
+                            <option value="freedom">Personal Freedom & Adventure</option>
+                            <option value="growth">Self-Discipline & Daily Growth</option>
+                        </select>
+                    </div>
+
+                    <!-- Input: Hobbies / Interests -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Hobbies or Core Interests</label>
+                        <input type="text" id="inputHobbies" placeholder="e.g. Coding, Philosophy, Photography, Fitness" value="Design, Coding, Philosophy" 
+                            class="w-full bg-slate-900/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition">
+                    </div>
+                </div>
+
+                <!-- Generate AI Quote Button -->
+                <div class="pt-2 flex flex-col gap-2">
+                    <button onclick="generatePersonalizedQuote()" class="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-500 hover:to-pink-500 text-white font-semibold text-xs rounded-xl shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition transform active:scale-95">
+                        <i data-lucide="sparkles" class="w-4 h-4"></i>
+                        <span>Generate Smart Personalized Quote</span>
+                    </button>
+
+                    <button onclick="switchTab(2)" class="w-full py-2 px-4 bg-slate-900 hover:bg-slate-800 text-slate-300 font-medium text-xs rounded-xl border border-slate-800 flex items-center justify-center gap-1.5 transition">
+                        <span>Proceed to Customizer</span>
+                        <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+
+                <hr class="border-slate-800 my-1">
+
+                <!-- Manual Editable Quote Fields -->
+                <div class="space-y-3">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Or Manual Overrides</span>
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">Quote Text</label>
+                        <textarea id="quoteTextInput" rows="3" oninput="updateCardText()" 
+                            class="w-full bg-slate-900/90 border border-slate-800 rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition resize-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">Author / Citation</label>
+                        <input type="text" id="quoteAuthorInput" oninput="updateCardAuthor()" 
+                            class="w-full bg-slate-900/90 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 transition">
+                    </div>
+                </div>
+            </div>
+
+            <!-- STEP 2: Theme & Styling Controls -->
+            <div id="step2Panel" class="glass-panel p-5 md:p-6 rounded-2xl flex-col gap-5 border border-slate-800/80 shadow-xl hidden">
+                
+                <!-- Preset Layout Themes -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-200 mb-2 flex items-center justify-between">
+                        <span>Preset Aesthetic Themes</span>
+                        <span class="text-[10px] text-indigo-400 font-normal">Click to apply template</span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="applyPresetTheme('editorial')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/80 hover:border-indigo-500/50 text-left transition flex items-center gap-2 group">
+                            <span class="w-3 h-3 rounded-full bg-amber-200 group-hover:scale-110 transition"></span>
+                            <span class="text-xs text-slate-300 font-medium group-hover:text-white">Editorial Mag</span>
+                        </button>
+                        <button onclick="applyPresetTheme('swiss')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/80 hover:border-indigo-500/50 text-left transition flex items-center gap-2 group">
+                            <span class="w-3 h-3 rounded-full bg-red-500 group-hover:scale-110 transition"></span>
+                            <span class="text-xs text-slate-300 font-medium group-hover:text-white">Swiss Minimal</span>
+                        </button>
+                        <button onclick="applyPresetTheme('cyberpunk')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/80 hover:border-indigo-500/50 text-left transition flex items-center gap-2 group">
+                            <span class="w-3 h-3 rounded-full bg-cyan-400 group-hover:scale-110 transition"></span>
+                            <span class="text-xs text-slate-300 font-medium group-hover:text-white">Neon Cyber</span>
+                        </button>
+                        <button onclick="applyPresetTheme('glassmorphism')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/80 hover:border-indigo-500/50 text-left transition flex items-center gap-2 group">
+                            <span class="w-3 h-3 rounded-full bg-indigo-400 group-hover:scale-110 transition"></span>
+                            <span class="text-xs text-slate-300 font-medium group-hover:text-white">Soft Glass</span>
+                        </button>
+                        <button onclick="applyPresetTheme('retro')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/80 hover:border-indigo-500/50 text-left transition flex items-center gap-2 group">
+                            <span class="w-3 h-3 rounded-full bg-orange-400 group-hover:scale-110 transition"></span>
+                            <span class="text-xs text-slate-300 font-medium group-hover:text-white">Retro Graphic</span>
+                        </button>
+                        <button onclick="applyPresetTheme('dark_executive')" class="p-2.5 rounded-xl border border-slate-800 bg-slate-900/80 hover:border-indigo-500/50 text-left transition flex items-center gap-2 group">
+                            <span class="w-3 h-3 rounded-full bg-emerald-400 group-hover:scale-110 transition"></span>
+                            <span class="text-xs text-slate-300 font-medium group-hover:text-white">Dark Executive</span>
+                        </button>
+                    </div>
+                </div>
+
+                <hr class="border-slate-800">
+
+                <!-- Typography & Font Family -->
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-slate-200">Typography & Font Family</label>
+                    <select id="fontSelect" onchange="updateStyleProperty('fontFamily', this.value)" class="w-full bg-slate-900/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500">
+                        <option value="font-playfair">Playfair Display (Serif / Editorial)</option>
+                        <option value="font-sans" selected>Inter (Clean Modern Sans)</option>
+                        <option value="font-space">Space Grotesk (Tech / Brutalist)</option>
+                        <option value="font-montserrat">Montserrat (Bold Header)</option>
+                        <option value="font-cinzel">Cinzel (Classical Luxury)</option>
+                        <option value="font-outfit">Outfit (Geometric Modern)</option>
+                        <option value="font-mono">JetBrains Mono (Developer / Code)</option>
+                    </select>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                                <span>Font Size</span>
+                                <span id="valFontSize" class="font-mono">24px</span>
+                            </div>
+                            <input type="range" id="sliderFontSize" min="16" max="44" value="24" oninput="updateStyleProperty('fontSize', this.value + 'px', 'valFontSize')" class="w-full accent-indigo-500">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                                <span>Line Height</span>
+                                <span id="valLineHeight" class="font-mono">1.4</span>
+                            </div>
+                            <input type="range" id="sliderLineHeight" min="1.0" max="2.0" step="0.1" value="1.4" oninput="updateStyleProperty('lineHeight', this.value, 'valLineHeight')" class="w-full accent-indigo-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[11px] text-slate-400 mb-1">Text Alignment</label>
+                        <div class="flex bg-slate-900 p-1 rounded-lg border border-slate-800 gap-1">
+                            <button onclick="updateStyleProperty('textAlign', 'left')" class="flex-1 py-1 text-center rounded text-xs hover:bg-slate-800 text-slate-300">Left</button>
+                            <button onclick="updateStyleProperty('textAlign', 'center')" class="flex-1 py-1 text-center rounded text-xs hover:bg-slate-800 text-slate-300">Center</button>
+                            <button onclick="updateStyleProperty('textAlign', 'right')" class="flex-1 py-1 text-center rounded text-xs hover:bg-slate-800 text-slate-300">Right</button>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-slate-800">
+
+                <!-- Color Customization & Background Gradients -->
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-slate-200">Gradients & Colors</label>
+                    
+                    <div class="grid grid-cols-4 gap-2">
+                        <button onclick="applyGradientPreset('sunset')" title="Sunset Flame" class="h-8 rounded-lg bg-gradient-to-br from-amber-500 via-rose-500 to-purple-600 border border-white/20 hover:scale-105 transition"></button>
+                        <button onclick="applyGradientPreset('cyber')" title="Cyber Neon" class="h-8 rounded-lg bg-gradient-to-br from-cyan-500 via-indigo-600 to-fuchsia-600 border border-white/20 hover:scale-105 transition"></button>
+                        <button onclick="applyGradientPreset('emerald')" title="Emerald Dusk" class="h-8 rounded-lg bg-gradient-to-br from-emerald-600 via-teal-700 to-slate-900 border border-white/20 hover:scale-105 transition"></button>
+                        <button onclick="applyGradientPreset('rosegold')" title="Rose Gold" class="h-8 rounded-lg bg-gradient-to-br from-rose-300 via-pink-500 to-purple-900 border border-white/20 hover:scale-105 transition"></button>
+                        <button onclick="applyGradientPreset('royal')" title="Royal Velvet" class="h-8 rounded-lg bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-950 border border-white/20 hover:scale-105 transition"></button>
+                        <button onclick="applyGradientPreset('aurora')" title="Aurora Borealis" class="h-8 rounded-lg bg-gradient-to-br from-green-400 via-cyan-500 to-blue-600 border border-white/20 hover:scale-105 transition"></button>
+                        <button onclick="applyGradientPreset('obsidian')" title="Dark Obsidian" class="h-8 rounded-lg bg-gradient-to-br from-slate-900 via-slate-950 to-black border border-white/20 hover:scale-105 transition"></button>
+                        <button onclick="applyGradientPreset('minimal_light')" title="Minimal Light" class="h-8 rounded-lg bg-gradient-to-br from-slate-100 via-zinc-200 to-slate-300 border border-slate-400 hover:scale-105 transition"></button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <div>
+                            <label class="block text-[11px] text-slate-400 mb-1">Text Color</label>
+                            <div class="flex items-center gap-2 bg-slate-900 p-1.5 rounded-lg border border-slate-800">
+                                <input type="color" id="textColorPicker" value="#ffffff" oninput="updateStyleProperty('textColor', this.value)" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent">
+                                <span id="textColorHex" class="text-xs font-mono text-slate-300">#ffffff</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] text-slate-400 mb-1">Accent Accent</label>
+                            <div class="flex items-center gap-2 bg-slate-900 p-1.5 rounded-lg border border-slate-800">
+                                <input type="color" id="accentColorPicker" value="#818cf8" oninput="updateStyleProperty('accentColor', this.value)" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent">
+                                <span id="accentColorHex" class="text-xs font-mono text-slate-300">#818cf8</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="border-slate-800">
+
+                <!-- Fine Controls (Blur, Padding, Radius, Noise) -->
+                <div class="space-y-3">
+                    <label class="block text-xs font-bold text-slate-200">Card Frame & Glass Effects</label>
+                    
+                    <div>
+                        <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                            <span>Backdrop Glass Blur</span>
+                            <span id="valGlassBlur" class="font-mono">16px</span>
+                        </div>
+                        <input type="range" id="sliderGlassBlur" min="0" max="40" value="16" oninput="updateStyleProperty('backdropBlur', this.value + 'px', 'valGlassBlur')" class="w-full accent-indigo-500">
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                            <span>Glass Panel Opacity</span>
+                            <span id="valGlassOpacity" class="font-mono">20%</span>
+                        </div>
+                        <input type="range" id="sliderGlassOpacity" min="0" max="100" value="20" oninput="updateStyleProperty('glassOpacity', this.value + '%', 'valGlassOpacity')" class="w-full accent-indigo-500">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                                <span>Corner Radius</span>
+                                <span id="valBorderRadius" class="font-mono">24px</span>
+                            </div>
+                            <input type="range" id="sliderBorderRadius" min="0" max="48" value="24" oninput="updateStyleProperty('borderRadius', this.value + 'px', 'valBorderRadius')" class="w-full accent-indigo-500">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[11px] text-slate-400 mb-1">
+                                <span>Card Padding</span>
+                                <span id="valPadding" class="font-mono">32px</span>
+                            </div>
+                            <input type="range" id="sliderPadding" min="16" max="64" value="32" oninput="updateStyleProperty('padding', this.value + 'px', 'valPadding')" class="w-full accent-indigo-500">
+                        </div>
+                    </div>
+
+                    <!-- Toggles -->
+                    <div class="flex items-center justify-between pt-1">
+                        <span class="text-xs text-slate-300">Show Grain Noise Overlay</span>
+                        <input type="checkbox" id="toggleNoise" checked onchange="updateStyleProperty('showNoise', this.checked)" class="w-4 h-4 accent-indigo-600 rounded cursor-pointer">
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-slate-300">Glow Border Highlight</span>
+                        <input type="checkbox" id="toggleBorderGlow" checked onchange="updateStyleProperty('borderGlow', this.checked)" class="w-4 h-4 accent-indigo-600 rounded cursor-pointer">
+                    </div>
+                </div>
+
+            </div>
+
+        </aside>
+
+        <!-- ================= RIGHT PANEL: Canvas Studio & Real-time Preview ================= -->
+        <section class="flex-1 flex flex-col items-center justify-between gap-6 min-w-0">
+            
+            <!-- Quick Action Floating Bar -->
+            <div class="w-full glass-panel p-2.5 rounded-2xl border border-slate-800/80 flex flex-wrap items-center justify-between gap-2 shadow-lg">
+                
+                <!-- Aspect Ratio Selector -->
+                <div class="flex items-center gap-1 bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs">
+                    <span class="text-[11px] font-medium text-slate-400 px-2 hidden sm:inline">Ratio:</span>
+                    <button onclick="setAspectRatio('square')" id="ratioSquare" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:bg-slate-800 font-medium transition text-xs flex items-center gap-1 bg-indigo-600 text-white">
+                        <i data-lucide="square" class="w-3.5 h-3.5"></i> 1:1
+                    </button>
+                    <button onclick="setAspectRatio('story')" id="ratioStory" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:bg-slate-800 font-medium transition text-xs flex items-center gap-1">
+                        <i data-lucide="smartphone" class="w-3.5 h-3.5"></i> 9:16
+                    </button>
+                    <button onclick="setAspectRatio('landscape')" id="ratioLandscape" class="px-2.5 py-1.5 rounded-lg text-slate-300 hover:bg-slate-800 font-medium transition text-xs flex items-center gap-1">
+                        <i data-lucide="monitor" class="w-3.5 h-3.5"></i> 16:9
+                    </button>
+                </div>
+
+                <!-- Interactive Canvas Actions -->
+                <div class="flex items-center gap-2">
+                    <button onclick="randomizeStyle()" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition flex items-center gap-1.5 text-xs" title="Randomize Colors & Fonts">
+                        <i data-lucide="shuffle" class="w-4 h-4 text-indigo-400"></i>
+                        <span class="hidden sm:inline">Randomize</span>
+                    </button>
+                    <button onclick="toggleCanvasBgMode()" id="btnCanvasBgToggle" class="p-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 hover:text-white transition" title="Toggle Studio Stage Background">
+                        <i data-lucide="sun" class="w-4 h-4 text-amber-400"></i>
+                    </button>
+                    <button onclick="saveCurrentToFavorites()" class="p-2 rounded-xl bg-indigo-900/40 hover:bg-indigo-900/60 border border-indigo-500/30 text-indigo-300 transition flex items-center gap-1.5 text-xs" title="Bookmark to Local Storage">
+                        <i data-lucide="bookmark-plus" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Save</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Preview Studio Canvas Container -->
+            <div id="studioStage" class="w-full flex-1 flex items-center justify-center p-4 sm:p-8 rounded-3xl bg-slate-900/40 border border-slate-800/60 min-h-[450px] relative overflow-hidden transition-colors duration-300">
+                
+                <!-- Background Ambient Glow -->
+                <div class="absolute -inset-10 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 blur-3xl pointer-events-none"></div>
+
+                <!-- THE ACTUAL EXPORTABLE QUOTE CARD -->
+                <div id="quoteCard" class="relative transition-all duration-300 flex flex-col justify-between overflow-hidden shadow-2xl group w-full max-w-[500px] aspect-square bg-gradient-to-br from-indigo-950 via-slate-950 to-purple-950"
+                     style="border-radius: 24px; padding: 32px; border: 1px solid rgba(255, 255, 255, 0.15);">
+                    
+                    <!-- Grain Overlay -->
+                    <div id="cardNoise" class="card-noise-overlay"></div>
+
+                    <!-- Inner Card Glass Backdrop Overlay -->
+                    <div id="glassBackdrop" class="absolute inset-0 transition-all pointer-events-none" style="background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);"></div>
+
+                    <!-- Top Card Header / Badge -->
+                    <div class="relative z-10 flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-2">
+                            <span id="cardBadgeIcon" class="p-1.5 rounded-lg bg-white/10 text-white backdrop-blur-md">
+                                <i data-lucide="quote" class="w-4 h-4"></i>
+                            </span>
+                            <span id="cardTag" class="text-[11px] font-semibold tracking-wider uppercase text-indigo-300 opacity-90">DAILY INSPIRATION</span>
+                        </div>
+                        <span id="cardDate" class="text-[10px] font-mono text-slate-400"></span>
+                    </div>
+
+                    <!-- Middle Card Quote Text (Contenteditable for direct editing) -->
+                    <div class="relative z-10 my-auto py-2">
+                        <p id="cardQuoteText" contenteditable="true" onblur="syncTextFromCard()" title="Click to edit text directly"
+                           class="outline-none transition-all font-sans font-medium text-white tracking-tight cursor-text">
+                           "The only way to do great work is to love what you do."
+                        </p>
+                    </div>
+
+                    <!-- Bottom Card Footer / Author -->
+                    <div class="relative z-10 flex items-center justify-between pt-4 border-t border-white/10 mt-4">
+                        <div>
+                            <p id="cardAuthor" contenteditable="true" onblur="syncAuthorFromCard()" class="text-xs font-bold text-white tracking-wide outline-none">— Alex Morgan</p>
+                            <p id="cardSubtext" class="text-[10px] text-slate-400 font-mono mt-0.5">Crafted with AuraQuote</p>
+                        </div>
+                        <div class="h-6 w-6 rounded-full bg-gradient-to-tr from-indigo-400 to-pink-400 flex items-center justify-center opacity-80">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-slate-950"></i>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <!-- Export & Utility Buttons Toolbar -->
+            <div class="w-full grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button onclick="exportAsImage()" class="py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-xs rounded-xl shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition transform active:scale-95">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Download HD Image</span>
+                </button>
+
+                <button onclick="copyQuoteText()" class="py-3 px-4 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition active:scale-95">
+                    <i data-lucide="copy" class="w-4 h-4 text-slate-400"></i>
+                    <span>Copy Text</span>
+                </button>
+
+                <button onclick="openSnippetModal()" class="py-3 px-4 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-800 font-semibold text-xs rounded-xl flex items-center justify-center gap-2 transition active:scale-95">
+                    <i data-lucide="code" class="w-4 h-4 text-slate-400"></i>
+                    <span>Get HTML/CSS Code</span>
+                </button>
+            </div>
+
+        </section>
+    </main>
+
+    <!-- Sleek Modern Footer -->
+    <footer class="w-full border-t border-slate-800/80 glass-panel mt-auto py-4 px-6 text-center text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
+            <p>© 2026 AuraQuote Studio. Engineered for creators and thinkers.</p>
+            <div class="flex items-center gap-4 text-slate-400">
+                <span class="flex items-center gap-1"><i data-lucide="zap" class="w-3.5 h-3.5 text-amber-400"></i> Instant Render</span>
+                <span class="flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i> Local & Private</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Notification Container -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-4 py-3 rounded-xl bg-slate-900 border border-indigo-500/40 text-white shadow-2xl text-xs font-medium transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <i id="toastIcon" data-lucide="check-circle" class="w-4 h-4 text-indigo-400"></i>
+        <span id="toastMsg">Action completed!</span>
+    </div>
+
+    <!-- Modal 1: HTML/CSS Snippet Code Modal -->
+    <div id="snippetModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-panel w-full max-w-2xl rounded-2xl p-6 border border-slate-800 shadow-2xl flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i data-lucide="code" class="w-4 h-4 text-indigo-400"></i> Generated HTML/CSS Snippet
+                </h3>
+                <button onclick="closeSnippetModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <p class="text-xs text-slate-400">Use this embeddable single-element code inside your own website or blog.</p>
+            
+            <pre class="bg-slate-950 p-4 rounded-xl border border-slate-800 text-[11px] font-mono text-indigo-300 overflow-x-auto max-h-60" id="snippetCodeBlock"></pre>
+            
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeSnippetModal()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-medium rounded-xl">Close</button>
+                <button onclick="copySnippetCode()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center gap-1.5">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Snippet
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal 2: Saved Favorites Drawer Modal -->
+    <div id="favoritesModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
+        <div class="glass-panel w-full max-w-3xl rounded-2xl p-6 border border-slate-800 shadow-2xl flex flex-col gap-4 max-h-[85vh]">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i data-lucide="bookmark" class="w-4 h-4 text-indigo-400"></i> Saved Quotes Gallery
+                </h3>
+                <button onclick="closeFavoritesModal()" class="text-slate-400 hover:text-white"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            
+            <div id="favoritesContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4 overflow-y-auto p-1 max-h-[55vh]">
+                <!-- Dynamic cards populated here -->
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t border-slate-800">
+                <button onclick="clearAllFavorites()" class="px-3 py-1.5 text-rose-400 hover:text-rose-300 text-xs font-medium">Clear All Saved</button>
+                <button onclick="closeFavoritesModal()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-medium rounded-xl">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ================= JAVASCRIPT LOGIC ================= -->
+    <script>
+        // Global Quote Repository Categorized by Mood & Focus
+        const QUOTE_DATABASE = {
+            ambitious: [
+                { quote: "The future belongs to those who learn more skills and combine them in creative ways.", author: "Robert Greene" },
+                { quote: "Do not wait; the time will never be 'just right.' Start where you stand.", author: "Napoleon Hill" },
+                { quote: "Your time is limited, don't waste it living someone else's life.", author: "Steve Jobs" }
+            ],
+            calm: [
+                { quote: "Peace comes from within. Do not seek it without.", author: "Buddha" },
+                { quote: "You have power over your mind - not outside events. Realize this, and you will find strength.", author: "Marcus Aurelius" },
+                { quote: "Stillness is where creativity and solutions are born.", author: "Eckhart Tolle" }
+            ],
+            creative: [
+                { quote: "Creativity is intelligence having fun.", author: "Albert Einstein" },
+                { quote: "You can't use up creativity. The more you use, the more you have.", author: "Maya Angelou" },
+                { quote: "Art is standing with one hand extended into the universe and one into the world.", author: "Story Musgrave" }
+            ],
+            resilient: [
+                { quote: "Out of suffering have emerged the strongest souls; the most massive characters are seared with scars.", author: "Kahlil Gibran" },
+                { quote: "Fall seven times and stand up eight.", author: "Japanese Proverb" },
+                { quote: "He who has a why to live can bear almost any how.", author: "Friedrich Nietzsche" }
+            ],
+            reflective: [
+                { quote: "The unexamined life is not worth living.", author: "Socrates" },
+                { quote: "We don't see things as they are, we see them as we are.", author: "Anaïs Nin" },
+                { quote: "Silence is a source of great strength.", author: "Lao Tzu" }
+            ],
+            energetic: [
+                { quote: "Action is the foundational key to all success.", author: "Pablo Picasso" },
+                { quote: "Energy flows where attention goes.", author: "Tony Robbins" },
+                { quote: "The secret of getting ahead is getting started.", author: "Mark Twain" }
+            ]
+        };
+
+        // State Management Object
+        let state = {
+            quote: "The only way to do great work is to love what you do.",
+            author: "Alex Morgan",
+            fontFamily: "font-sans",
+            fontSize: "24px",
+            lineHeight: "1.4",
+            textAlign: "center",
+            textColor: "#ffffff",
+            accentColor: "#818cf8",
+            bgGradient: "linear-gradient(135deg, #0f172a, #1e1b4b, #311042)",
+            backdropBlur: "16px",
+            glassOpacity: "20%",
+            borderRadius: "24px",
+            padding: "32px",
+            showNoise: true,
+            borderGlow: true,
+            aspectRatio: "square"
+        };
+
+        // Saved Favorites Storage
+        let favorites = JSON.parse(localStorage.getItem('aura_favorites') || '[]');
+
+        // Initialize application on load
+        window.onload = function() {
+            lucide.createIcons();
+            updateTimeAndGreeting();
+            setInterval(updateTimeAndGreeting, 60000); // update time every minute
+            
+            // Set current date on card
+            const options = { month: 'short', day: 'numeric', year: 'numeric' };
+            document.getElementById('cardDate').innerText = new Date().toLocaleDateString('en-US', options);
+            
+            // Load initial state to DOM
+            renderCardFromState();
+            updateFavoritesCount();
+        };
+
+        // Dynamic Greeting & Time of Day Logic
+        function updateTimeAndGreeting() {
+            const now = new Date();
+            const hours = now.getHours();
+            const minutes = now.getMinutes().toString().padStart(2, '0');
+            const timeStr = `${hours % 12 || 12}:${minutes} ${hours >= 12 ? 'PM' : 'AM'}`;
+
+            let greeting = "Good Day";
+            let icon = "sun";
+            let subtitle = "Craft your daily reflection and mindset anchor.";
+
+            if (hours >= 5 && hours < 12) {
+                greeting = "Good Morning";
+                icon = "sun";
+                subtitle = "Start your day with clarity, drive, and focus.";
+            } else if (hours >= 12 && hours < 17) {
+                greeting = "Good Afternoon";
+                icon = "sun-medium";
+                subtitle = "Keep up the momentum and stay inspired.";
+            } else if (hours >= 17 && hours < 22) {
+                greeting = "Good Evening";
+                icon = "sunset";
+                subtitle = "Reflect on your achievements and unwind.";
+            } else {
+                greeting = "Good Night";
+                icon = "moon";
+                subtitle = "Rest your mind and prepare for tomorrow's potential.";
+            }
+
+            // Update DOM Header elements
+            document.getElementById('greetingHeaderText').innerText = `${greeting}, Creator`;
+            document.getElementById('greetingHeaderSubtitle').innerText = subtitle;
+            document.getElementById('greetingHeaderIcon').innerHTML = `<i data-lucide="${icon}" class="w-4 h-4"></i>`;
+            
+            document.getElementById('timeTextDesktop').innerText = timeStr;
+            document.getElementById('timeIconDesktop').innerHTML = `<i data-lucide="${icon}" class="w-3.5 h-3.5 text-indigo-400"></i>`;
+            
+            document.getElementById('timeTextMobile').innerText = timeStr;
+            document.getElementById('timeIconMobile').innerHTML = `<i data-lucide="${icon}" class="w-3.5 h-3.5 text-indigo-400"></i>`;
+            
+            lucide.createIcons();
+        }
+
+        // Tab Switching in Left Sidebar
+        function switchTab(tabNum) {
+            const btn1 = document.getElementById('tabBtn1');
+            const btn2 = document.getElementById('tabBtn2');
+            const p1 = document.getElementById('step1Panel');
+            const p2 = document.getElementById('step2Panel');
+
+            if (tabNum === 1) {
+                btn1.className = "flex-1 py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all bg-indigo-600 text-white shadow";
+                btn2.className = "flex-1 py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all text-slate-400 hover:text-slate-200";
+                p1.classList.remove('hidden');
+                p2.classList.add('hidden');
+            } else {
+                btn2.className = "flex-1 py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all bg-indigo-600 text-white shadow";
+                btn1.className = "flex-1 py-2.5 px-3 rounded-lg text-xs font-semibold flex items-center justify-center gap-2 transition-all text-slate-400 hover:text-slate-200";
+                p2.classList.remove('hidden');
+                p1.classList.add('hidden');
+            }
+        }
+
+        // Generate Smart Personalized Quote based on inputs
+        function generatePersonalizedQuote() {
+            const name = document.getElementById('inputName').value.trim() || 'Visionary';
+            const mood = document.getElementById('inputMood').value;
+            const goal = document.getElementById('inputGoal').value;
+            const hobbies = document.getElementById('inputHobbies').value.trim();
+
+            const pool = QUOTE_DATABASE[mood] || QUOTE_DATABASE.ambitious;
+            const randomPick = pool[Math.floor(Math.random() * pool.length)];
+
+            // Personalization engine tweaks
+            state.quote = `"${randomPick.quote}"`;
+            state.author = `${randomPick.author} (Curated for ${name})`;
+
+            // Sync with input fields
+            document.getElementById('quoteTextInput').value = state.quote;
+            document.getElementById('quoteAuthorInput').value = state.author;
+
+            renderCardFromState();
+            showToast("Generated new quote tailored to your vibe!");
+        }
+
+        // Live Manual Inputs Synchronization
+        function updateCardText() {
+            state.quote = document.getElementById('quoteTextInput').value;
+            document.getElementById('cardQuoteText').innerText = state.quote;
+        }
+
+        function updateCardAuthor() {
+            state.author = document.getElementById('quoteAuthorInput').value;
+            document.getElementById('cardAuthor').innerText = state.author;
+        }
+
+        function syncTextFromCard() {
+            state.quote = document.getElementById('cardQuoteText').innerText;
+            document.getElementById('quoteTextInput').value = state.quote;
+        }
+
+        function syncAuthorFromCard() {
+            state.author = document.getElementById('cardAuthor').innerText;
+            document.getElementById('quoteAuthorInput').value = state.author;
+        }
+
+        // Style Updating Helper
+        function updateStyleProperty(prop, val, valDisplayId = null) {
+            state[prop] = val;
+            if (valDisplayId) {
+                document.getElementById(valDisplayId).innerText = val;
+            }
+            if (prop === 'textColor') {
+                document.getElementById('textColorHex').innerText = val;
+            }
+            if (prop === 'accentColor') {
+                document.getElementById('accentColorHex').innerText = val;
+            }
+            renderCardFromState();
+        }
+
+        // Apply Preset Theme Templates
+        function applyPresetTheme(themeName) {
+            switch (themeName) {
+                case 'editorial':
+                    state.fontFamily = 'font-playfair';
+                    state.bgGradient = 'linear-gradient(135deg, #1c1917, #292524, #0c0a09)';
+                    state.textColor = '#fef3c7';
+                    state.accentColor = '#f59e0b';
+                    state.borderRadius = '12px';
+                    state.backdropBlur = '8px';
+                    break;
+                case 'swiss':
+                    state.fontFamily = 'font-sans';
+                    state.bgGradient = 'linear-gradient(135deg, #ef4444, #b91c1c, #7f1d1d)';
+                    state.textColor = '#ffffff';
+                    state.accentColor = '#fca5a5';
+                    state.borderRadius = '0px';
+                    state.textAlign = 'left';
+                    state.backdropBlur = '0px';
+                    break;
+                case 'cyberpunk':
+                    state.fontFamily = 'font-space';
+                    state.bgGradient = 'linear-gradient(135deg, #030712, #0f172a, #1e1b4b)';
+                    state.textColor = '#22d3ee';
+                    state.accentColor = '#f43f5e';
+                    state.borderRadius = '16px';
+                    state.backdropBlur = '20px';
+                    break;
+                case 'glassmorphism':
+                    state.fontFamily = 'font-outfit';
+                    state.bgGradient = 'linear-gradient(135deg, #4f46e5, #7c3aed, #db2777)';
+                    state.textColor = '#ffffff';
+                    state.accentColor = '#a5b4fc';
+                    state.borderRadius = '32px';
+                    state.backdropBlur = '24px';
+                    state.glassOpacity = '25%';
+                    break;
+                case 'retro':
+                    state.fontFamily = 'font-cinzel';
+                    state.bgGradient = 'linear-gradient(135deg, #78350f, #92400e, #451a03)';
+                    state.textColor = '#fef08a';
+                    state.accentColor = '#fbbf24';
+                    state.borderRadius = '20px';
+                    break;
+                case 'dark_executive':
+                    state.fontFamily = 'font-mono';
+                    state.bgGradient = 'linear-gradient(135deg, #020617, #0f172a, #020617)';
+                    state.textColor = '#38bdf8';
+                    state.accentColor = '#34d399';
+                    state.borderRadius = '16px';
+                    break;
+            }
+            syncControlsWithState();
+            renderCardFromState();
+            showToast(`Applied ${themeName.replace('_', ' ')} theme preset!`);
+        }
+
+        // Apply Gradient Color Presets
+        function applyGradientPreset(preset) {
+            const presets = {
+                sunset: 'linear-gradient(135deg, #f97316, #ec4899, #8b5cf6)',
+                cyber: 'linear-gradient(135deg, #06b6d4, #4f46e5, #d946ef)',
+                emerald: 'linear-gradient(135deg, #059669, #0f766e, #0f172a)',
+                rosegold: 'linear-gradient(135deg, #fda4af, #f43f5e, #581c87)',
+                royal: 'linear-gradient(135deg, #312e81, #4c1d95, #0f172a)',
+                aurora: 'linear-gradient(135deg, #34d399, #06b6d4, #2563eb)',
+                obsidian: 'linear-gradient(135deg, #0f172a, #020617, #000000)',
+                minimal_light: 'linear-gradient(135deg, #f8fafc, #e2e8f0, #cbd5e1)'
+            };
+            state.bgGradient = presets[preset] || presets.sunset;
+            renderCardFromState();
+        }
+
+        // Sync State to Controls UI
+        function syncControlsWithState() {
+            document.getElementById('fontSelect').value = state.fontFamily;
+            document.getElementById('sliderFontSize').value = parseInt(state.fontSize);
+            document.getElementById('valFontSize').innerText = state.fontSize;
+            document.getElementById('textColorPicker').value = state.textColor;
+            document.getElementById('textColorHex').innerText = state.textColor;
+            document.getElementById('accentColorPicker').value = state.accentColor;
+            document.getElementById('accentColorHex').innerText = state.accentColor;
+            document.getElementById('sliderBorderRadius').value = parseInt(state.borderRadius);
+            document.getElementById('valBorderRadius').innerText = state.borderRadius;
+        }
+
+        // Main Rendering Logic to Canvas Card
+        function renderCardFromState() {
+            const card = document.getElementById('quoteCard');
+            const glass = document.getElementById('glassBackdrop');
+            const noise = document.getElementById('cardNoise');
+            const quoteText = document.getElementById('cardQuoteText');
+            const authorText = document.getElementById('cardAuthor');
+            const tagText = document.getElementById('cardTag');
+            const badgeIcon = document.getElementById('cardBadgeIcon');
+
+            // Apply Background & Structure
+            card.style.background = state.bgGradient;
+            card.style.borderRadius = state.borderRadius;
+            card.style.padding = state.padding;
+            
+            // Border Glow Logic
+            if (state.borderGlow) {
+                card.style.border = `1px solid ${state.accentColor}55`;
+                card.style.boxShadow = `0 20px 40px -15px ${state.accentColor}33`;
+            } else {
+                card.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+                card.style.boxShadow = 'none';
+            }
+
+            // Glass Overlay
+            const opVal = parseInt(state.glassOpacity) / 100;
+            glass.style.background = `rgba(255, 255, 255, ${opVal})`;
+            glass.style.backdropFilter = `blur(${state.backdropBlur})`;
+            glass.style.webkitBackdropFilter = `blur(${state.backdropBlur})`;
+
+            // Noise Toggle
+            noise.style.display = state.showNoise ? 'block' : 'none';
+
+            // Text Styles
+            quoteText.innerText = state.quote;
+            quoteText.className = `outline-none transition-all font-medium tracking-tight cursor-text ${state.fontFamily}`;
+            quoteText.style.fontSize = state.fontSize;
+            quoteText.style.lineHeight = state.lineHeight;
+            quoteText.style.textAlign = state.textAlign;
+            quoteText.style.color = state.textColor;
+
+            authorText.innerText = state.author;
+            authorText.style.color = state.textColor;
+
+            tagText.style.color = state.accentColor;
+            badgeIcon.style.color = state.accentColor;
+        }
+
+        // Change Aspect Ratio of Preview Canvas
+        function setAspectRatio(ratio) {
+            const card = document.getElementById('quoteCard');
+            const btnSquare = document.getElementById('ratioSquare');
+            const btnStory = document.getElementById('ratioStory');
+            const btnLandscape = document.getElementById('ratioLandscape');
+
+            // Reset buttons
+            [btnSquare, btnStory, btnLandscape].forEach(b => {
+                b.className = "px-2.5 py-1.5 rounded-lg text-slate-300 hover:bg-slate-800 font-medium transition text-xs flex items-center gap-1";
+            });
+
+            if (ratio === 'square') {
+                card.style.aspectRatio = '1 / 1';
+                card.style.maxWidth = '480px';
+                btnSquare.className += " bg-indigo-600 text-white";
+            } else if (ratio === 'story') {
+                card.style.aspectRatio = '9 / 16';
+                card.style.maxWidth = '340px';
+                btnStory.className += " bg-indigo-600 text-white";
+            } else if (ratio === 'landscape') {
+                card.style.aspectRatio = '16 / 9';
+                card.style.maxWidth = '560px';
+                btnLandscape.className += " bg-indigo-600 text-white";
+            }
+            state.aspectRatio = ratio;
+        }
+
+        // Randomize Style Controls
+        function randomizeStyle() {
+            const fonts = ['font-playfair', 'font-sans', 'font-space', 'font-montserrat', 'font-cinzel', 'font-outfit'];
+            const gradients = [
+                'linear-gradient(135deg, #f97316, #ec4899, #8b5cf6)',
+                'linear-gradient(135deg, #06b6d4, #4f46e5, #d946ef)',
+                'linear-gradient(135deg, #059669, #0f766e, #0f172a)',
+                'linear-gradient(135deg, #fda4af, #f43f5e, #581c87)',
+                'linear-gradient(135deg, #34d399, #06b6d4, #2563eb)'
+            ];
+            
+            state.fontFamily = fonts[Math.floor(Math.random() * fonts.length)];
+            state.bgGradient = gradients[Math.floor(Math.random() * gradients.length)];
+            state.fontSize = (Math.floor(Math.random() * 12) + 20) + 'px';
+            
+            syncControlsWithState();
+            renderCardFromState();
+            showToast("Shuffled visual theme!");
+        }
+
+        // Toggle Stage Background Mode (Dark/Light environment)
+        let isLightStage = false;
+        function toggleCanvasBgMode() {
+            const stage = document.getElementById('studioStage');
+            const btn = document.getElementById('btnCanvasBgToggle');
+            isLightStage = !isLightStage;
+            
+            if (isLightStage) {
+                stage.className = "w-full flex-1 flex items-center justify-center p-4 sm:p-8 rounded-3xl bg-slate-200 border border-slate-300 min-h-[450px] relative overflow-hidden transition-colors duration-300";
+                btn.innerHTML = `<i data-lucide="moon" class="w-4 h-4 text-indigo-600"></i>`;
+            } else {
+                stage.className = "w-full flex-1 flex items-center justify-center p-4 sm:p-8 rounded-3xl bg-slate-900/40 border border-slate-800/60 min-h-[450px] relative overflow-hidden transition-colors duration-300";
+                btn.innerHTML = `<i data-lucide="sun" class="w-4 h-4 text-amber-400"></i>`;
+            }
+            lucide.createIcons();
+        }
+
+        // Export Card as High Quality Image using html2canvas
+        function exportAsImage() {
+            showToast("Preparing image download...");
+            const cardElement = document.getElementById('quoteCard');
+
+            html2canvas(cardElement, {
+                scale: 3, // High DPI render
+                useCORS: true,
+                backgroundColor: null,
+                logging: false
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `AuraQuote-${Date.now()}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showToast("Image downloaded successfully!");
+            }).catch(err => {
+                console.error(err);
+                showToast("Failed to render image.");
+            });
+        }
+
+        // Copy Plain Text Quote to Clipboard
+        function copyQuoteText() {
+            const textToCopy = `${state.quote} ${state.author}`;
+            
+            // Clipboard fallback for iframe security constraints
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy);
+            } else {
+                const textArea = document.createElement("textarea");
+                textArea.value = textToCopy;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+            }
+            showToast("Quote text copied to clipboard!");
+        }
+
+        // HTML/CSS Code Snippet Modal Actions
+        function openSnippetModal() {
+            const codeBlock = document.getElementById('snippetCodeBlock');
+            const snippet = `<div style="
+  background: ${state.bgGradient};
+  border-radius: ${state.borderRadius};
+  padding: ${state.padding};
+  color: ${state.textColor};
+  font-family: ${state.fontFamily.replace('font-', '')}, sans-serif;
+  border: 1px solid ${state.accentColor}44;
+  box-shadow: 0 20px 30px -10px rgba(0,0,0,0.3);
+  max-width: 480px;
+">
+  <p style="font-size: ${state.fontSize}; line-height: ${state.lineHeight}; text-align: ${state.textAlign}; font-weight: 500;">
+    ${state.quote}
+  </p>
+  <p style="font-size: 12px; margin-top: 16px; font-weight: bold; opacity: 0.9;">
+    ${state.author}
+  </p>
+</div>`;
+
+            codeBlock.innerText = snippet;
+            const modal = document.getElementById('snippetModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeSnippetModal() {
+            const modal = document.getElementById('snippetModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function copySnippetCode() {
+            const code = document.getElementById('snippetCodeBlock').innerText;
+            const textArea = document.createElement("textarea");
+            textArea.value = code;
+            document.body.appendChild(textArea);
+            textArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textArea);
+            showToast("HTML/CSS Code copied!");
+            closeSnippetModal();
+        }
+
+        // Favorites LocalStorage Management
+        function saveCurrentToFavorites() {
+            const item = {
+                id: Date.now(),
+                quote: state.quote,
+                author: state.author,
+                gradient: state.bgGradient,
+                font: state.fontFamily,
+                textColor: state.textColor
+            };
+            favorites.unshift(item);
+            localStorage.setItem('aura_favorites', JSON.stringify(favorites));
+            updateFavoritesCount();
+            showToast("Saved to your favorites gallery!");
+        }
+
+        function updateFavoritesCount() {
+            document.getElementById('favoritesCountBadge').innerText = favorites.length;
+        }
+
+        function openFavoritesModal() {
+            const container = document.getElementById('favoritesContainer');
+            container.innerHTML = '';
+
+            if (favorites.length === 0) {
+                container.innerHTML = `<div class="col-span-full py-12 text-center text-slate-500 text-xs">No saved quote cards yet. Click "Save" on the studio canvas to bookmark designs!</div>`;
+            } else {
+                favorites.forEach(fav => {
+                    const cardDiv = document.createElement('div');
+                    cardDiv.className = "p-4 rounded-xl border border-slate-800 flex flex-col justify-between gap-3 text-xs relative group";
+                    cardDiv.style.background = fav.gradient;
+                    cardDiv.style.color = fav.textColor;
+
+                    cardDiv.innerHTML = `
+                        <p class="font-medium line-clamp-3">${fav.quote}</p>
+                        <div class="flex items-center justify-between border-t border-white/10 pt-2 text-[11px]">
+                            <span class="font-bold">${fav.author}</span>
+                            <button onclick="removeFavorite(${fav.id})" class="p-1 rounded bg-black/40 hover:bg-rose-600 text-white transition"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                        </div>
+                    `;
+                    container.appendChild(cardDiv);
+                });
+                lucide.createIcons();
+            }
+
+            const modal = document.getElementById('favoritesModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+        }
+
+        function closeFavoritesModal() {
+            const modal = document.getElementById('favoritesModal');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+        }
+
+        function removeFavorite(id) {
+            favorites = favorites.filter(f => f.id !== id);
+            localStorage.setItem('aura_favorites', JSON.stringify(favorites));
+            updateFavoritesCount();
+            openFavoritesModal();
+            showToast("Removed from favorites.");
+        }
+
+        function clearAllFavorites() {
+            favorites = [];
+            localStorage.removeItem('aura_favorites');
+            updateFavoritesCount();
+            openFavoritesModal();
+            showToast("Cleared all favorites.");
+        }
+
+        // Notification Toast Helper
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            toastMsg.innerText = msg;
+            
+            toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
