@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Smash Badminton 2P</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Teko:wght@700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: #0b0f19;
+      color: #f3f4f6;
+      overflow: hidden;
+    }
+    .font-teko {
+      font-family: 'Teko', sans-serif;
+    }
+    .glass-panel {
+      background: rgba(15, 23, 42, 0.75);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.6);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+    .neon-text-p1 {
+      text-shadow: 0 0 12px rgba(244, 63, 94, 0.6);
+    }
+    .neon-text-p2 {
+      text-shadow: 0 0 12px rgba(6, 182, 212, 0.6);
+    }
+    .btn-action {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .btn-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px -4px rgba(0, 0, 0, 0.5);
+    }
+    .btn-action:active {
+      transform: translateY(1px);
+    }
+    /* Mobile Touch Controls */
+    .touch-btn {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(4px);
+    }
+    .touch-btn:active {
+      background: rgba(255, 255, 255, 0.3);
+    }
+  </style>
+</head>
+<body class="w-screen h-screen flex flex-col justify-center items-center relative select-none">
+
+  <!-- Main Game Canvas Container -->
+  <div id="canvas-container" class="relative w-full h-full max-w-[1280px] max-h-[720px] aspect-video flex justify-center items-center shadow-2xl overflow-hidden rounded-xl border border-slate-800">
+    <canvas id="gameCanvas" width="1280" height="720" class="w-full h-full block bg-slate-950"></canvas>
+
+    <!-- TOP HUD OVERLAY -->
+    <div id="hud-overlay" class="absolute top-4 left-4 right-4 flex justify-between items-center pointer-events-none hidden z-10">
+      <!-- Player 1 Score Block -->
+      <div class="glass-card px-5 py-2 rounded-2xl flex items-center space-x-4 border-l-4 border-rose-500">
+        <div>
+          <div class="text-xs uppercase tracking-wider text-rose-400 font-bold flex items-center gap-1">
+            <span>P1 (Red)</span>
+            <span id="p1-serve-icon" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse hidden"></span>
+          </div>
+          <div id="p1-name" class="text-sm font-semibold text-slate-200">Player 1</div>
+        </div>
+        <div id="p1-score" class="font-teko text-5xl font-bold text-rose-500 leading-none neon-text-p1">0</div>
+        <div class="flex flex-col gap-1 pl-2 border-l border-slate-700/60" id="p1-sets-tracker">
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-700"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-700"></span>
+        </div>
+      </div>
+
+      <!-- Match Info / Pause Button -->
+      <div class="flex flex-col items-center pointer-events-auto">
+        <div class="glass-card px-4 py-1.5 rounded-full flex items-center space-x-3 mb-1">
+          <span id="match-status" class="text-xs font-bold text-amber-400 uppercase tracking-widest">SET 1</span>
+          <span class="text-slate-600">|</span>
+          <span id="match-target" class="text-xs font-semibold text-slate-400">First to 11</span>
+        </div>
+        <button id="btn-pause" class="glass-card p-2 rounded-full text-slate-300 hover:text-white transition hover:bg-slate-700/50">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </button>
+      </div>
+
+      <!-- Player 2 Score Block -->
+      <div class="glass-card px-5 py-2 rounded-2xl flex items-center space-x-4 border-r-4 border-cyan-400 flex-row-reverse space-x-reverse">
+        <div>
+          <div class="text-xs uppercase tracking-wider text-cyan-400 font-bold flex items-center justify-end gap-1">
+            <span id="p2-serve-icon" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse hidden"></span>
+            <span>P2 (Blue)</span>
+          </div>
+          <div id="p2-name" class="text-sm font-semibold text-slate-200 text-right">Player 2</div>
+        </div>
+        <div id="p2-score" class="font-teko text-5xl font-bold text-cyan-400 leading-none neon-text-p2">0</div>
+        <div class="flex flex-col gap-1 pr-2 border-r border-slate-700/60" id="p2-sets-tracker">
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-700"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-slate-700"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rally Toast Banner -->
+    <div id="rally-banner" class="absolute top-24 left-1/2 -translate-x-1/2 pointer-events-none transition-all duration-300 opacity-0 scale-90 z-10">
+      <div class="glass-panel px-6 py-2 rounded-full border border-amber-500/40 text-amber-300 font-bold text-lg tracking-wider shadow-xl flex items-center gap-2">
+        <span id="rally-banner-icon">⚡</span>
+        <span id="rally-banner-text">SMASH!</span>
+      </div>
+    </div>
+
+    <!-- TOUCH CONTROLS (AUTO SHOW ON TOUCH) -->
+    <div id="touch-controls" class="absolute inset-0 pointer-events-none hidden z-20 flex justify-between p-4 items-end">
+      <!-- P1 Left Controls -->
+      <div class="pointer-events-auto flex gap-2">
+        <div class="flex flex-col gap-2">
+          <button id="t-p1-jump" class="touch-btn w-14 h-14 rounded-full text-white font-bold text-lg flex items-center justify-center">▲</button>
+          <div class="flex gap-2">
+            <button id="t-p1-left" class="touch-btn w-14 h-14 rounded-full text-white font-bold text-lg flex items-center justify-center">◄</button>
+            <button id="t-p1-right" class="touch-btn w-14 h-14 rounded-full text-white font-bold text-lg flex items-center justify-center">►</button>
+          </div>
+        </div>
+        <button id="t-p1-hit" class="touch-btn w-16 h-16 rounded-full bg-rose-600/60 text-white font-extrabold text-sm flex items-center justify-center self-end border-2 border-rose-400">HIT</button>
+      </div>
+
+      <!-- P2 Right Controls -->
+      <div class="pointer-events-auto flex gap-2 flex-row-reverse">
+        <div class="flex flex-col gap-2">
+          <button id="t-p2-jump" class="touch-btn w-14 h-14 rounded-full text-white font-bold text-lg flex items-center justify-center">▲</button>
+          <div class="flex gap-2">
+            <button id="t-p2-left" class="touch-btn w-14 h-14 rounded-full text-white font-bold text-lg flex items-center justify-center">◄</button>
+            <button id="t-p2-right" class="touch-btn w-14 h-14 rounded-full text-white font-bold text-lg flex items-center justify-center">►</button>
+          </div>
+        </div>
+        <button id="t-p2-hit" class="touch-btn w-16 h-16 rounded-full bg-cyan-600/60 text-white font-extrabold text-sm flex items-center justify-center self-end border-2 border-cyan-400">HIT</button>
+      </div>
+    </div>
+
+    <!-- MENU 1: MAIN MENU -->
+    <div id="screen-main" class="absolute inset-0 glass-panel flex flex-col justify-center items-center z-30 p-6 text-center">
+      <div class="relative mb-6">
+        <h1 class="font-teko text-7xl md:text-8xl font-extrabold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-rose-500 via-amber-300 to-cyan-400 uppercase drop-shadow-lg">
+          Smash Badminton 2P
+        </h1>
+        <div class="text-slate-400 text-sm font-semibold tracking-widest uppercase -mt-3">Arcade Physics Badminton Simulation</div>
+      </div>
+
+      <div class="flex flex-col gap-4 w-full max-w-xs">
+        <button id="btn-start-game" class="btn-action bg-gradient-to-r from-rose-500 to-rose-600 text-white font-extrabold text-lg py-3.5 px-8 rounded-xl shadow-lg shadow-rose-500/30 uppercase tracking-wider flex items-center justify-center gap-2">
+          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"></path></svg>
+          Start Match
+        </button>
+
+        <button id="btn-how-to-play" class="btn-action glass-card hover:bg-slate-800 text-slate-200 font-bold text-md py-3 px-6 rounded-xl border border-slate-700/60 transition flex items-center justify-center gap-2">
+          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          How to Play / Controls
+        </button>
+
+        <button id="btn-settings" class="btn-action glass-card hover:bg-slate-800 text-slate-200 font-bold text-md py-3 px-6 rounded-xl border border-slate-700/60 transition flex items-center justify-center gap-2">
+          <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+          Match Settings
+        </button>
+      </div>
+      
+      <div class="mt-8 text-xs text-slate-500 font-medium">Local 2-Player Arcade | Canvas 60FPS Engine</div>
+    </div>
+
+    <!-- MODAL: HOW TO PLAY -->
+    <div id="modal-guide" class="absolute inset-0 glass-panel flex flex-col justify-center items-center z-40 p-6 hidden">
+      <div class="glass-card max-w-2xl w-full p-6 rounded-2xl border border-slate-700 shadow-2xl overflow-y-auto max-h-[90vh]">
+        <div class="flex justify-between items-center mb-6 border-b border-slate-700/80 pb-3">
+          <h2 class="text-2xl font-bold text-amber-400 flex items-center gap-2">🎮 How to Play & Controls</h2>
+          <button id="btn-close-guide" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left mb-6">
+          <!-- P1 Controls -->
+          <div class="bg-slate-900/70 p-4 rounded-xl border border-rose-500/30">
+            <h3 class="text-rose-400 font-extrabold text-lg mb-3 flex items-center justify-between">
+              Player 1 (Left Side)
+              <span class="text-xs px-2 py-0.5 rounded bg-rose-500/20 border border-rose-500/40">RED</span>
+            </h3>
+            <ul class="space-y-2 text-sm text-slate-300">
+              <li><kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700">A</kbd> / <kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700">D</kbd> : Move Left / Right</li>
+              <li><kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700">W</kbd> : Jump</li>
+              <li><kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700">SPACE</kbd> : Swing Racket</li>
+            </ul>
+          </div>
+
+          <!-- P2 Controls -->
+          <div class="bg-slate-900/70 p-4 rounded-xl border border-cyan-500/30">
+            <h3 class="text-cyan-400 font-extrabold text-lg mb-3 flex items-center justify-between">
+              Player 2 (Right Side)
+              <span class="text-xs px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-500/40">BLUE</span>
+            </h3>
+            <ul class="space-y-2 text-sm text-slate-300">
+              <li><kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700">◄</kbd> / <kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700">►</kbd> : Move Left / Right</li>
+              <li><kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700">▲</kbd> : Jump</li>
+              <li><kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700">ENTER</kbd> or <kbd class="px-2 py-1 bg-slate-800 rounded border border-slate-700">L</kbd> : Swing Racket</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 text-left text-sm text-slate-300 space-y-2">
+          <div class="font-bold text-amber-400 mb-1">🏸 Shot Dynamics & Aerodynamics:</div>
+          <p><span class="text-amber-300 font-semibold">⚡ SMASH:</span> Swing while jumping high near the shuttlecock to trigger a downward, high-speed power smash.</p>
+          <p><span class="text-cyan-300 font-semibold">🎾 CLEAR / LOB:</span> Swing early or standing back to hit a deep, high arching backcourt shot.</p>
+          <p><span class="text-emerald-300 font-semibold">🎯 DROP SHOT:</span> Swing softly near the net to drop the shuttlecock just over the net mesh.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: SETTINGS -->
+    <div id="modal-settings" class="absolute inset-0 glass-panel flex flex-col justify-center items-center z-40 p-6 hidden">
+      <div class="glass-card max-w-md w-full p-6 rounded-2xl border border-slate-700 shadow-2xl">
+        <div class="flex justify-between items-center mb-6 border-b border-slate-700/80 pb-3">
+          <h2 class="text-xl font-bold text-slate-200">⚙️ Match Settings</h2>
+          <button id="btn-close-settings" class="text-slate-400 hover:text-white text-xl font-bold p-1">✕</button>
+        </div>
+
+        <div class="space-y-4 text-left">
+          <div>
+            <label class="block text-sm font-semibold text-slate-400 mb-1">Score Limit Per Set</label>
+            <select id="setting-score" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-200 focus:outline-none focus:border-rose-500">
+              <option value="7">7 Points (Quick Game)</option>
+              <option value="11" selected>11 Points (Standard)</option>
+              <option value="21">21 Points (Professional)</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-slate-400 mb-1">Set Format</label>
+            <select id="setting-sets" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-200 focus:outline-none focus:border-rose-500">
+              <option value="1">Single Set Match</option>
+              <option value="3" selected>Best of 3 Sets</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-sm font-semibold text-slate-400 mb-1">Audio Sound Effects</label>
+            <button id="btn-toggle-sound" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-slate-200 flex justify-between items-center font-medium">
+              <span>Synthesized SFX</span>
+              <span id="sound-status-text" class="text-emerald-400 font-bold">ENABLED</span>
+            </button>
+          </div>
+        </div>
+
+        <button id="btn-save-settings" class="w-full mt-6 bg-rose-600 hover:bg-rose-500 text-white font-bold py-2.5 rounded-lg transition">Save & Close</button>
+      </div>
+    </div>
+
+    <!-- PAUSE MENU OVERLAY -->
+    <div id="screen-pause" class="absolute inset-0 glass-panel flex flex-col justify-center items-center z-30 p-6 hidden">
+      <h2 class="font-teko text-6xl font-bold tracking-wider text-amber-400 uppercase mb-4">Match Paused</h2>
+      <div class="flex flex-col gap-3 w-full max-w-xs">
+        <button id="btn-resume" class="btn-action bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3 px-6 rounded-xl transition">Resume Match</button>
+        <button id="btn-restart" class="btn-action glass-card hover:bg-slate-800 text-slate-200 font-bold py-3 px-6 rounded-xl border border-slate-700 transition">Restart Match</button>
+        <button id="btn-quit-main" class="btn-action glass-card hover:bg-slate-800 text-rose-400 font-bold py-3 px-6 rounded-xl border border-slate-700 transition">Quit to Main Menu</button>
+      </div>
+    </div>
+
+    <!-- RESULT / WINNER SCREEN -->
+    <div id="screen-result" class="absolute inset-0 glass-panel flex flex-col justify-center items-center z-40 p-6 hidden">
+      <div class="glass-card max-w-lg w-full p-8 rounded-3xl border border-slate-700 text-center shadow-2xl animate-fade-in">
+        <div class="text-amber-400 font-extrabold tracking-widest text-sm uppercase mb-1">Match Winner</div>
+        <h2 id="winner-title" class="font-teko text-6xl font-extrabold bg-clip-text text-transparent bg-gradient-to-r from-rose-500 to-amber-300 uppercase leading-none mb-4">
+          Player 1 Champion!
+        </h2>
+
+        <!-- Stats Breakdown -->
+        <div class="grid grid-cols-2 gap-3 bg-slate-900/60 p-4 rounded-2xl border border-slate-800 mb-6 text-sm">
+          <div>
+            <div class="text-xs text-slate-500 font-semibold">Total Smashes</div>
+            <div id="stat-smashes" class="text-lg font-bold text-slate-200">12</div>
+          </div>
+          <div>
+            <div class="text-xs text-slate-500 font-semibold">Longest Rally</div>
+            <div id="stat-rally" class="text-lg font-bold text-slate-200">18 Hits</div>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3">
+          <button id="btn-rematch" class="flex-1 btn-action bg-gradient-to-r from-rose-500 to-rose-600 text-white font-extrabold py-3 rounded-xl shadow-lg shadow-rose-500/30 uppercase tracking-wider">
+            Rematch
+          </button>
+          <button id="btn-result-main" class="flex-1 btn-action glass-card hover:bg-slate-800 text-slate-300 font-bold py-3 rounded-xl border border-slate-700 transition">
+            Main Menu
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    /* ==========================================================================
+       SMASH BADMINTON 2P - CORE GAME ENGINE
+       ========================================================================== */
+
+    // Web Audio Synthesizer Engine
+    class SoundFX {
+      constructor() {
+        this.ctx = null;
+        this.enabled = true;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playHit(isSmash = false) {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+        
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = isSmash ? 'triangle' : 'sine';
+        
+        const now = this.ctx.currentTime;
+        osc.frequency.setValueAtTime(isSmash ? 420 : 280, now);
+        osc.frequency.exponentialRampToValueAtTime(isSmash ? 80 : 120, now + (isSmash ? 0.15 : 0.08));
+        
+        gain.gain.setValueAtTime(isSmash ? 0.8 : 0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + (isSmash ? 0.15 : 0.08));
+        
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + (isSmash ? 0.15 : 0.08));
+      }
+      playCheer() {
+        if (!this.enabled) return;
+        this.init();
+        if (!this.ctx) return;
+
+        // White noise burst for cheer/whistle
+        const bufferSize = this.ctx.sampleRate * 0.4;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = Math.random() * 2 - 1;
+        }
+
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = 1200;
+        filter.Q.value = 3;
+
+        const gain = this.ctx.createGain();
+        const now = this.ctx.currentTime;
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        noise.start(now);
+      }
+    }
+
+    const sfx = new SoundFX();
+
+    // Game Constants & Configuration
+    const CANVAS_WIDTH = 1280;
+    const CANVAS_HEIGHT = 720;
+    const GROUND_Y = 620;
+    const NET_HEIGHT = 170;
+    const NET_X = CANVAS_WIDTH / 2;
+    const NET_Y = GROUND_Y - NET_HEIGHT;
+
+    // Game Settings Defaults
+    let config = {
+      scoreLimit: 11,
+      totalSets: 3,
+      soundEnabled: true
+    };
+
+    // Game State Management
+    const GameState = {
+      MENU: 'MENU',
+      PLAYING: 'PLAYING',
+      SERVE: 'SERVE',
+      PAUSED: 'PAUSED',
+      SET_OVER: 'SET_OVER',
+      MATCH_OVER: 'MATCH_OVER'
+    };
+
+    let currentState = GameState.MENU;
+
+    // Dynamic Crowd Bleacher Animations
+    const crowdAudience = [];
+    for (let i = 0; i < 70; i++) {
+      crowdAudience.push({
+        x: 60 + Math.random() * (CANVAS_WIDTH - 120),
+        y: 120 + Math.random() * 180,
+        color: ['#f43f5e', '#06b6d4', '#f59e0b', '#10b981', '#8b5cf6', '#ec4899'][Math.floor(Math.random() * 6)],
+        offset: Math.random() * Math.PI * 2,
+        size: 10 + Math.random() * 6
+      });
+    }
+
+    // Input Controller Setup
+    const keys = {};
+    window.addEventListener('keydown', (e) => {
+      keys[e.code] = true;
+      if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+        e.preventDefault();
+      }
+    });
+    window.addEventListener('keyup', (e) => {
+      keys[e.code] = false;
+    });
+
+    // Touch Device Auto Detection & Mapping
+    window.addEventListener('touchstart', () => {
+      document.getElementById('touch-controls').classList.remove('hidden');
+    }, { once: true });
+
+    function setupTouchButton(id, keyCode) {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[keyCode] = true; });
+      btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[keyCode] = false; });
+    }
+    setupTouchButton('t-p1-left', 'KeyA');
+    setupTouchButton('t-p1-right', 'KeyD');
+    setupTouchButton('t-p1-jump', 'KeyW');
+    setupTouchButton('t-p1-hit', 'Space');
+
+    setupTouchButton('t-p2-left', 'ArrowLeft');
+    setupTouchButton('t-p2-right', 'ArrowRight');
+    setupTouchButton('t-p2-jump', 'ArrowUp');
+    setupTouchButton('t-p2-hit', 'Enter');
+
+    // Player Entity Constructor
+    class Player {
+      constructor(id, x, color, skinColor) {
+        this.id = id;
+        this.startX = x;
+        this.x = x;
+        this.y = GROUND_Y;
+        this.vx = 0;
+        this.vy = 0;
+        this.width = 44;
+        this.height = 95;
+        this.color = color;
+        this.skinColor = skinColor;
+        this.isGrounded = true;
+        this.racketAngle = id === 1 ? -0.4 : 0.4;
+        this.isSwinging = false;
+        this.swingTimer = 0;
+        this.score = 0;
+        this.setsWon = 0;
+
+        // Dynamic Physics Properties
+        this.speed = 7.5;
+        this.jumpForce = -17.5;
+        this.gravity = 0.85;
+
+        // Racket Hitbox Bounds
+        this.racketX = 0;
+        this.racketY = 0;
+      }
+
+      reset(x) {
+        this.x = x || this.startX;
+        this.y = GROUND_Y;
+        this.vx = 0;
+        this.vy = 0;
+        this.isSwinging = false;
+        this.swingTimer = 0;
+      }
+
+      update() {
+        // Horizontal Boundary Restrictions
+        const minX = this.id === 1 ? 40 : NET_X + 25;
+        const maxX = this.id === 1 ? NET_X - 25 : CANVAS_WIDTH - 40;
+
+        // Apply Input Acceleration
+        this.x += this.vx;
+        if (this.x < minX) this.x = minX;
+        if (this.x > maxX) this.x = maxX;
+
+        // Gravity & Jump Arc
+        this.vy += this.gravity;
+        this.y += this.vy;
+
+        if (this.y >= GROUND_Y) {
+          this.y = GROUND_Y;
+          this.vy = 0;
+          this.isGrounded = true;
+        } else {
+          this.isGrounded = false;
+        }
+
+        // Racket Swing Animation Counter
+        if (this.isSwinging) {
+          this.swingTimer += 0.22;
+          if (this.swingTimer >= Math.PI) {
+            this.isSwinging = false;
+            this.swingTimer = 0;
+          }
+        }
+
+        // Calculate Global Dynamic Position of Racket Head
+        const swingOffset = this.isSwinging ? Math.sin(this.swingTimer) * 1.5 : 0;
+        const baseAngle = this.id === 1 ? -0.3 + swingOffset : 0.3 - swingOffset;
+        this.racketAngle = baseAngle;
+
+        const shoulderX = this.x + (this.id === 1 ? 12 : -12);
+        const shoulderY = this.y - 60;
+        this.racketX = shoulderX + Math.cos(this.racketAngle - (this.id === 1 ? 0.8 : -0.8)) * 48;
+        this.racketY = shoulderY + Math.sin(this.racketAngle - (this.id === 1 ? 0.8 : -0.8)) * 48;
+      }
+
+      swing() {
+        if (!this.isSwinging) {
+          this.isSwinging = true;
+          this.swingTimer = 0;
+        }
+      }
+
+      draw(ctx) {
+        ctx.save();
+
+        // Player Shadows
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+        ctx.beginPath();
+        const shadowScale = Math.max(0.3, 1 - (GROUND_Y - this.y) / 300);
+        ctx.ellipse(this.x, GROUND_Y + 5, 25 * shadowScale, 8 * shadowScale, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Character Legs Dynamics
+        ctx.strokeStyle = this.skinColor;
+        ctx.lineWidth = 8;
+        ctx.lineCap = 'round';
+
+        const legOffset = Math.sin(this.x * 0.1) * (this.vx !== 0 ? 12 : 0);
+        // Left Leg
+        ctx.beginPath();
+        ctx.moveTo(this.x - 8, this.y - 35);
+        ctx.lineTo(this.x - 12 - legOffset, this.y);
+        ctx.stroke();
+        // Right Leg
+        ctx.beginPath();
+        ctx.moveTo(this.x + 8, this.y - 35);
+        ctx.lineTo(this.x + 12 + legOffset, this.y);
+        ctx.stroke();
+
+        // Torso / Jersey Body
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.roundRect(this.x - 16, this.y - 70, 32, 38, 8);
+        ctx.fill();
+
+        // Head Frame
+        ctx.fillStyle = this.skinColor;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y - 82, 14, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Hair / Bandana Headband Detail
+        ctx.fillStyle = '#1e293b';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y - 87, 14, Math.PI, Math.PI * 2);
+        ctx.fill();
+
+        // Arm & Racket Rendering
+        const shoulderX = this.x + (this.id === 1 ? 12 : -12);
+        const shoulderY = this.y - 60;
+
+        ctx.strokeStyle = this.skinColor;
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.moveTo(shoulderX, shoulderY);
+        ctx.lineTo(this.racketX, this.racketY);
+        ctx.stroke();
+
+        // Racket Head Ring
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        const headX = this.racketX + Math.cos(this.racketAngle - (this.id === 1 ? 0.8 : -0.8)) * 16;
+        const headY = this.racketY + Math.sin(this.racketAngle - (this.id === 1 ? 0.8 : -0.8)) * 16;
+        ctx.ellipse(headX, headY, 14, 18, this.racketAngle, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.restore();
+      }
+    }
+
+    // Shuttlecock Aerodynamic Physics Entity
+    class Shuttlecock {
+      constructor() {
+        this.x = CANVAS_WIDTH / 4;
+        this.y = 300;
+        this.vx = 0;
+        this.vy = 0;
+        this.radius = 8;
+        this.gravity = 0.38;
+        this.drag = 0.985; // Air Drag Resistance Coefficient
+        this.lastHitter = null;
+        this.trail = [];
+      }
+
+      reset(x, y) {
+        this.x = x;
+        this.y = y;
+        this.vx = 0;
+        this.vy = 0;
+        this.lastHitter = null;
+        this.trail = [];
+      }
+
+      update() {
+        // Save Trail Positions for Motion Effects
+        this.trail.push({ x: this.x, y: this.y });
+        if (this.trail.length > 8) this.trail.shift();
+
+        // Aerodynamics: Air Drag & Gravity Deceleration
+        this.vx *= this.drag;
+        this.vy *= this.drag;
+        this.vy += this.gravity;
+
+        this.x += this.vx;
+        this.y += this.vy;
+
+        // Shuttle Net Collision Engine
+        if (Math.abs(this.x - NET_X) < 12 && this.y > NET_Y) {
+          // Bounce off net mesh
+          this.vx *= -0.35;
+          this.x += this.vx;
+          sfx.playHit(false);
+        }
+      }
+
+      draw(ctx) {
+        // Motion Speed Trail
+        ctx.save();
+        for (let i = 0; i < this.trail.length; i++) {
+          const pt = this.trail[i];
+          const alpha = (i + 1) / this.trail.length * 0.35;
+          ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, this.radius * (i / this.trail.length), 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Feather Shuttle Cone Angle Direction
+        const angle = Math.atan2(this.vy, this.vx);
+
+        ctx.translate(this.x, this.y);
+        ctx.rotate(angle);
+
+        // White Feathers Cone
+        ctx.fillStyle = '#f8fafc';
+        ctx.beginPath();
+        ctx.moveTo(8, 0);
+        ctx.lineTo(-10, -7);
+        ctx.lineTo(-6, 0);
+        ctx.lineTo(-10, 7);
+        ctx.closePath();
+        ctx.fill();
+
+        // Rubber Base Cork Point
+        ctx.fillStyle = '#ef4444';
+        ctx.beginPath();
+        ctx.arc(6, 0, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    // Instantiation of Core Entities
+    const player1 = new Player(1, 260, '#f43f5e', '#fca5a5');
+    const player2 = new Player(2, 1020, '#06b6d4', '#fde047');
+    const shuttle = new Shuttlecock();
+
+    let serverPlayer = player1;
+    let rallyCount = 0;
+    let totalSmashes = 0;
+    let maxRally = 0;
+
+    // Trigger Rally HUD Toast Banner
+    function showRallyToast(text, icon = '⚡') {
+      const banner = document.getElementById('rally-banner');
+      document.getElementById('rally-banner-text').textContent = text;
+      document.getElementById('rally-banner-icon').textContent = icon;
+      banner.classList.remove('opacity-0', 'scale-90');
+      banner.classList.add('opacity-100', 'scale-100');
+      setTimeout(() => {
+        banner.classList.remove('opacity-100', 'scale-100');
+        banner.classList.add('opacity-0', 'scale-90');
+      }, 1400);
+    }
+
+    // Serving Logic Init
+    function prepareServe(server) {
+      currentState = GameState.SERVE;
+      serverPlayer = server;
+      shuttle.vx = 0;
+      shuttle.vy = 0;
+
+      if (server === player1) {
+        player1.reset(240);
+        player2.reset(980);
+        shuttle.x = player1.x + 30;
+        shuttle.y = player1.y - 70;
+      } else {
+        player1.reset(300);
+        player2.reset(1040);
+        shuttle.x = player2.x - 30;
+        shuttle.y = player2.y - 70;
+      }
+
+      // Update Serve UI Indicators
+      document.getElementById('p1-serve-icon').classList.toggle('hidden', server !== player1);
+      document.getElementById('p2-serve-icon').classList.toggle('hidden', server !== player2);
+    }
+
+    // Award Points & Evaluate Sets / Match Rules
+    function awardPoint(winner) {
+      winner.score += 1;
+      sfx.playCheer();
+      if (rallyCount > maxRally) maxRally = rallyCount;
+      rallyCount = 0;
+
+      updateHUD();
+
+      // Check Set Win Condition
+      const minScore = config.scoreLimit;
+      if (winner.score >= minScore && Math.abs(player1.score - player2.score) >= 2) {
+        winner.setsWon += 1;
+        updateSetsTracker();
+
+        const setsToWin = Math.ceil(config.totalSets / 2);
+        if (winner.setsWon >= setsToWin) {
+          // MATCH OVER
+          currentState = GameState.MATCH_OVER;
+          document.getElementById('winner-title').textContent = `${winner.id === 1 ? 'Player 1' : 'Player 2'} Victory!`;
+          document.getElementById('stat-smashes').textContent = totalSmashes;
+          document.getElementById('stat-rally').textContent = `${maxRally} Hits`;
+          document.getElementById('screen-result').classList.remove('hidden');
+        } else {
+          // NEXT SET
+          currentState = GameState.SET_OVER;
+          showRallyToast(`SET WON BY P${winner.id}!`, '🏆');
+          setTimeout(() => {
+            player1.score = 0;
+            player2.score = 0;
+            updateHUD();
+            prepareServe(winner);
+          }, 2000);
+        }
+      } else {
+        prepareServe(winner);
+      }
+    }
+
+    // Update Scores HUD
+    function updateHUD() {
+      document.getElementById('p1-score').textContent = player1.score;
+      document.getElementById('p2-score').textContent = player2.score;
+    }
+
+    function updateSetsTracker() {
+      const p1Dots = document.getElementById('p1-sets-tracker').children;
+      const p2Dots = document.getElementById('p2-sets-tracker').children;
+
+      for (let i = 0; i < p1Dots.length; i++) {
+        p1Dots[i].className = i < player1.setsWon ? 'w-2.5 h-2.5 rounded-full bg-rose-500 shadow-glow' : 'w-2.5 h-2.5 rounded-full bg-slate-700';
+      }
+      for (let i = 0; i < p2Dots.length; i++) {
+        p2Dots[i].className = i < player2.setsWon ? 'w-2.5 h-2.5 rounded-full bg-cyan-400 shadow-glow' : 'w-2.5 h-2.5 rounded-full bg-slate-700';
+      }
+    }
+
+    // Handle Input Engine Inside Game Loop
+    function handleInputs() {
+      if (currentState !== GameState.PLAYING && currentState !== GameState.SERVE) return;
+
+      // --- Player 1 Keyboard Controls ---
+      player1.vx = 0;
+      if (keys['KeyA']) player1.vx = -player1.speed;
+      if (keys['KeyD']) player1.vx = player1.speed;
+      if (keys['KeyW'] && player1.isGrounded) {
+        player1.vy = player1.jumpForce;
+        player1.isGrounded = false;
+      }
+      if (keys['Space']) {
+        if (!player1.isSwinging) {
+          player1.swing();
+          checkHit(player1);
+        }
+      }
+
+      // --- Player 2 Keyboard Controls ---
+      player2.vx = 0;
+      if (keys['ArrowLeft']) player2.vx = -player2.speed;
+      if (keys['ArrowRight']) player2.vx = player2.speed;
+      if (keys['ArrowUp'] && player2.isGrounded) {
+        player2.vy = player2.jumpForce;
+        player2.isGrounded = false;
+      }
+      if (keys['Enter'] || keys['KeyL']) {
+        if (!player2.isSwinging) {
+          player2.swing();
+          checkHit(player2);
+        }
+      }
+    }
+
+    // Dynamic Hitbox Collision & Shot Calculation
+    function checkHit(player) {
+      const dist = Math.hypot(shuttle.x - player.racketX, shuttle.y - player.racketY);
+      
+      // Serve Auto-Launch Assist
+      if (currentState === GameState.SERVE && serverPlayer === player) {
+        if (dist < 75) {
+          currentState = GameState.PLAYING;
+          shuttle.lastHitter = player;
+          rallyCount++;
+          
+          const direction = player.id === 1 ? 1 : -1;
+          shuttle.vx = direction * 11;
+          shuttle.vy = -13;
+          sfx.playHit(false);
+          return;
+        }
+      }
+
+      // In-Rally Hit Detection
+      if (dist < 65) {
+        shuttle.lastHitter = player;
+        rallyCount++;
+
+        const isP1 = player.id === 1;
+        const dir = isP1 ? 1 : -1;
+
+        // Dynamic Shot Type Engine
+        const isJumpingHigh = !player.isGrounded && player.y < GROUND_Y - 50;
+        const isShuttleAbove = shuttle.y < player.y - 40;
+
+        if (isJumpingHigh && isShuttleAbove) {
+          // --- SMASH SHOT ---
+          shuttle.vx = dir * (19 + Math.random() * 3);
+          shuttle.vy = 8 + Math.random() * 3;
+          totalSmashes++;
+          sfx.playHit(true);
+          showRallyToast('POWER SMASH!', '💥');
+        } else if (player.x > CANVAS_WIDTH / 2 - 180 && player.x < CANVAS_WIDTH / 2 + 180 && Math.abs(shuttle.x - NET_X) < 160) {
+          // --- DROP SHOT (Near Net) ---
+          shuttle.vx = dir * (5.5 + Math.random() * 1.5);
+          shuttle.vy = -6.5;
+          sfx.playHit(false);
+          showRallyToast('DROP SHOT', '🎯');
+        } else {
+          // --- CLEAR / LOB SHOT ---
+          shuttle.vx = dir * (13 + Math.random() * 2);
+          shuttle.vy = -14.5 - Math.random() * 2;
+          sfx.playHit(false);
+        }
+      }
+    }
+
+    // Main Canvas Visual Rendering Loop
+    function renderCourt(ctx) {
+      // 1. Dynamic Stadium Audience Bleachers Background
+      const time = Date.now() * 0.003;
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, CANVAS_WIDTH, 300);
+
+      // Stadium Tier Lines
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 2;
+      for (let y = 120; y <= 280; y += 35) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(CANVAS_WIDTH, y);
+        ctx.stroke();
+      }
+
+      // Crowd Bouncing Animated Spectators
+      crowdAudience.forEach((p) => {
+        const bounce = Math.sin(time * 2 + p.offset) * 4;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y + bounce, p.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+      });
+
+      // Gradient Hall Wall Barrier
+      const wallGrad = ctx.createLinearGradient(0, 280, 0, GROUND_Y);
+      wallGrad.addColorStop(0, '#1e293b');
+      wallGrad.addColorStop(1, '#020617');
+      ctx.fillStyle = wallGrad;
+      ctx.fillRect(0, 280, CANVAS_WIDTH, GROUND_Y - 280);
+
+      // 2. Realistic 2D Wooden Badminton Court Floor
+      ctx.fillStyle = '#065f46'; // Vibrant Tournament Green Surface
+      ctx.fillRect(40, GROUND_Y, CANVAS_WIDTH - 80, 100);
+
+      // Court Lines (White standard lines)
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 4;
+
+      // Base Ground Line
+      ctx.beginPath();
+      ctx.moveTo(40, GROUND_Y);
+      ctx.lineTo(CANVAS_WIDTH - 40, GROUND_Y);
+      ctx.stroke();
+
+      // Outer Boundary Verticals
+      ctx.beginPath();
+      ctx.moveTo(40, GROUND_Y);
+      ctx.lineTo(40, GROUND_Y + 70);
+      ctx.moveTo(CANVAS_WIDTH - 40, GROUND_Y);
+      ctx.lineTo(CANVAS_WIDTH - 40, GROUND_Y + 70);
+      ctx.stroke();
+
+      // Short Service Lines
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+      ctx.beginPath();
+      ctx.moveTo(NET_X - 180, GROUND_Y);
+      ctx.lineTo(NET_X - 180, GROUND_Y + 70);
+      ctx.moveTo(NET_X + 180, GROUND_Y);
+      ctx.lineTo(NET_X + 180, GROUND_Y + 70);
+      ctx.stroke();
+
+      // 3. Vector Net Structure & Mesh
+      ctx.fillStyle = '#94a3b8';
+      // Left/Right Posts
+      ctx.fillRect(NET_X - 4, NET_Y, 8, NET_HEIGHT + 10);
+
+      // Net Mesh Lines
+      ctx.strokeStyle = 'rgba(241, 245, 249, 0.35)';
+      ctx.lineWidth = 1;
+      const meshSize = 10;
+      for (let y = NET_Y + 10; y < GROUND_Y; y += meshSize) {
+        ctx.beginPath();
+        ctx.moveTo(NET_X - 4, y);
+        ctx.lineTo(NET_X + 4, y);
+        ctx.stroke();
+      }
+
+      // Net Top White Band Header
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(NET_X - 6, NET_Y, 12, 10);
+      ctx.shadowColor = 'rgba(0,0,0,0.4)';
+      ctx.shadowBlur = 6;
+    }
+
+    // Ground & Out-of-Bounds Rules Engine
+    function checkRules() {
+      if (currentState !== GameState.PLAYING) return;
+
+      // Shuttle Touches Floor Ground
+      if (shuttle.y >= GROUND_Y - 5) {
+        shuttle.y = GROUND_Y - 5;
+
+        const isOutOfBounds = shuttle.x < 40 || shuttle.x > CANVAS_WIDTH - 40;
+
+        if (isOutOfBounds) {
+          // Out of bounds: point awarded to opponent of last hitter
+          if (shuttle.lastHitter) {
+            const winner = shuttle.lastHitter === player1 ? player2 : player1;
+            showRallyToast('OUT OF BOUNDS!', '❌');
+            awardPoint(winner);
+          } else {
+            awardPoint(player1);
+          }
+        } else {
+          // In court floor hit: point to player on opposite side of landing
+          if (shuttle.x < NET_X) {
+            showRallyToast('POINT P2!', '🏸');
+            awardPoint(player2);
+          } else {
+            showRallyToast('POINT P1!', '🏸');
+            awardPoint(player1);
+          }
+        }
+      }
+    }
+
+    // Core Loop 60FPS Refresh Engine
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function gameLoop() {
+      // Clear Screen Buffer
+      ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+      // Process Hardware Inputs
+      handleInputs();
+
+      // Update Game Mechanics Physics
+      if (currentState === GameState.PLAYING || currentState === GameState.SERVE) {
+        player1.update();
+        player2.update();
+
+        if (currentState === GameState.PLAYING) {
+          shuttle.update();
+          checkRules();
+        }
+      }
+
+      // Render Graphics Stack
+      renderCourt(ctx);
+      player1.draw(ctx);
+      player2.draw(ctx);
+      shuttle.draw(ctx);
+
+      requestAnimationFrame(gameLoop);
+    }
+
+    // UI Event Handler Bindings
+    document.getElementById('btn-start-game').addEventListener('click', () => {
+      document.getElementById('screen-main').classList.add('hidden');
+      document.getElementById('hud-overlay').classList.remove('hidden');
+
+      player1.score = 0;
+      player2.score = 0;
+      player1.setsWon = 0;
+      player2.setsWon = 0;
+      updateHUD();
+      updateSetsTracker();
+
+      prepareServe(player1);
+    });
+
+    document.getElementById('btn-how-to-play').addEventListener('click', () => {
+      document.getElementById('modal-guide').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-guide').addEventListener('click', () => {
+      document.getElementById('modal-guide').classList.add('hidden');
+    });
+
+    document.getElementById('btn-settings').addEventListener('click', () => {
+      document.getElementById('modal-settings').classList.remove('hidden');
+    });
+
+    document.getElementById('btn-close-settings').addEventListener('click', () => {
+      document.getElementById('modal-settings').classList.add('hidden');
+    });
+
+    document.getElementById('btn-save-settings').addEventListener('click', () => {
+      config.scoreLimit = parseInt(document.getElementById('setting-score').value);
+      config.totalSets = parseInt(document.getElementById('setting-sets').value);
+      document.getElementById('match-target').textContent = `First to ${config.scoreLimit}`;
+      document.getElementById('modal-settings').classList.add('hidden');
+    });
+
+    document.getElementById('btn-toggle-sound').addEventListener('click', () => {
+      sfx.enabled = !sfx.enabled;
+      const statusText = document.getElementById('sound-status-text');
+      statusText.textContent = sfx.enabled ? 'ENABLED' : 'DISABLED';
+      statusText.className = sfx.enabled ? 'text-emerald-400 font-bold' : 'text-rose-500 font-bold';
+    });
+
+    // Pause & Resume Event Controls
+    document.getElementById('btn-pause').addEventListener('click', () => {
+      if (currentState === GameState.PLAYING || currentState === GameState.SERVE) {
+        currentState = GameState.PAUSED;
+        document.getElementById('screen-pause').classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('btn-resume').addEventListener('click', () => {
+      document.getElementById('screen-pause').classList.add('hidden');
+      currentState = GameState.PLAYING;
+    });
+
+    document.getElementById('btn-restart').addEventListener('click', () => {
+      document.getElementById('screen-pause').classList.add('hidden');
+      player1.score = 0;
+      player2.score = 0;
+      player1.setsWon = 0;
+      player2.setsWon = 0;
+      updateHUD();
+      updateSetsTracker();
+      prepareServe(player1);
+    });
+
+    document.getElementById('btn-quit-main').addEventListener('click', () => {
+      document.getElementById('screen-pause').classList.add('hidden');
+      document.getElementById('hud-overlay').classList.add('hidden');
+      document.getElementById('screen-main').classList.remove('hidden');
+      currentState = GameState.MENU;
+    });
+
+    document.getElementById('btn-rematch').addEventListener('click', () => {
+      document.getElementById('screen-result').classList.add('hidden');
+      player1.score = 0;
+      player2.score = 0;
+      player1.setsWon = 0;
+      player2.setsWon = 0;
+      updateHUD();
+      updateSetsTracker();
+      prepareServe(player1);
+    });
+
+    document.getElementById('btn-result-main').addEventListener('click', () => {
+      document.getElementById('screen-result').classList.add('hidden');
+      document.getElementById('hud-overlay').classList.add('hidden');
+      document.getElementById('screen-main').classList.remove('hidden');
+      currentState = GameState.MENU;
+    });
+
+    // Launch Application Loop on Load
+    window.onload = () => {
+      gameLoop();
+    };
+  </script>
+</body>
+</html>
